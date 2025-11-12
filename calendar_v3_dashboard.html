@@ -1,0 +1,2100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buho Vision - Calendario Semanal Dashboard v3.0</title>
+    <!-- Versión 3.0 - Dashboard 16:9 + Full functionality from v2 + Saturday start -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .main-container {
+            max-width: 100%;
+            height: calc(100vh - 40px);
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Header compacto */
+        .header {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            color: white;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+            border-bottom: 3px solid #4ade80;
+        }
+
+        .header-center {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 25px;
+            justify-content: center;
+            flex: 0 0 auto;
+        }
+
+        .header-logo {
+            height: 120px;
+            width: auto;
+            order: 2;
+        }
+
+        .header-title {
+            font-size: 26px;
+            font-weight: 700;
+            color: white;
+            white-space: nowrap;
+            letter-spacing: 2px;
+            order: 1;
+        }
+
+        .week-selector {
+            flex: 0 0 auto;
+        }
+
+        .header h1 {
+            display: none;
+        }
+
+        .week-selector {
+            min-width: 300px;
+        }
+
+        .header-actions {
+            min-width: 300px;
+            justify-content: flex-end;
+        }
+
+        .week-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .week-selector button {
+            padding: 8px 15px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .week-selector button:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: #4ade80;
+            color: #0a0a0a;
+            font-weight: 700;
+        }
+
+        .btn-primary:hover {
+            background: #22c55e;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #2d3748;
+        }
+
+        .btn-secondary:hover {
+            background: #f7fafc;
+        }
+
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        /* Grid de 7 días (Sábado a Viernes) */
+        .week-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            padding: 15px;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Cada cuadrante de día */
+        .day-card {
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border-radius: 10px;
+            border: 2px solid #cbd5e0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .day-card:hover {
+            border-color: #4ade80;
+            box-shadow: 0 5px 20px rgba(74, 222, 128, 0.4);
+        }
+
+        .day-header {
+            background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 13px;
+            flex-shrink: 0;
+            border-bottom: 2px solid #4ade80;
+        }
+
+        .day-date {
+            font-size: 11px;
+            opacity: 0.9;
+            margin-top: 3px;
+        }
+
+        .day-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        /* Scrollbar personalizado */
+        .day-content::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        .day-content::-webkit-scrollbar-track {
+            background: #edf2f7;
+        }
+
+        .day-content::-webkit-scrollbar-thumb {
+            background: #cbd5e0;
+            border-radius: 10px;
+        }
+
+        .day-content::-webkit-scrollbar-thumb:hover {
+            background: #a0aec0;
+        }
+
+        /* Elementos de contenido */
+        .task-item {
+            background: white;
+            border-left: 4px solid #4ade80;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            font-size: 11px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .task-item:hover {
+            transform: translateX(3px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .task-title {
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+
+        .task-leagues {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 3px;
+            margin-bottom: 3px;
+        }
+
+        .league-tag {
+            background: #dcfce7;
+            color: #16a34a;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .task-assignee {
+            color: #718096;
+            font-size: 10px;
+            margin-top: 3px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .mini-avatar {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .task-status-indicator {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        .status-pending {
+            background: #fed7d7;
+            color: #c53030;
+        }
+
+        .status-in-progress {
+            background: #feebc8;
+            color: #c05621;
+        }
+
+        .status-completed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .empty-day {
+            text-align: center;
+            color: #a0aec0;
+            padding: 20px;
+            font-size: 11px;
+        }
+
+        /* Contador de items */
+        .day-counter {
+            background: rgba(255,255,255,0.3);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            margin-left: 5px;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .modal-header h2 {
+            font-size: 24px;
+            color: #2d3748;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #a0aec0;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+
+        .close-modal:hover {
+            background: #edf2f7;
+            color: #2d3748;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Checkboxes para ligas */
+        .leagues-checkboxes {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .league-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .league-checkbox input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .league-checkbox label {
+            margin: 0;
+            font-weight: normal;
+            cursor: pointer;
+        }
+
+        .error-message {
+            color: #f56565;
+            font-size: 12px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-left: 4px solid #667eea;
+            z-index: 2000;
+            max-width: 350px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.error {
+            border-left-color: #f56565;
+        }
+
+        .notification.success {
+            border-left-color: #48bb78;
+        }
+
+        /* Indicador de carga PDF */
+        .pdf-loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            z-index: 2000;
+            display: none;
+            text-align: center;
+        }
+
+        .pdf-loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Responsive para impresión */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .main-container {
+                height: auto;
+                box-shadow: none;
+            }
+
+            .header-actions,
+            .btn {
+                display: none;
+            }
+
+            .week-grid {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* Task detail view in modal */
+        #task-details {
+            line-height: 1.6;
+        }
+
+        .avatar {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #667eea;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+
+            .main-container {
+                height: auto;
+                min-height: 100vh;
+                border-radius: 0;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 10px;
+                padding: 12px 10px;
+            }
+
+            .week-selector {
+                order: 1;
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .week-selector button {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+
+            .week-selector span {
+                font-size: 11px;
+            }
+
+            .header-center {
+                order: 2;
+                flex-direction: row;
+                gap: 15px;
+                align-items: center;
+            }
+
+            .header-logo {
+                height: 50px;
+                order: 1;
+            }
+
+            .header-title {
+                font-size: 14px;
+                order: 2;
+            }
+
+            .header-actions {
+                order: 3;
+                width: 100%;
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+            }
+
+            .btn {
+                padding: 8px 10px;
+                font-size: 10px;
+                white-space: nowrap;
+            }
+
+            .week-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                padding: 10px;
+            }
+
+            .day-card {
+                min-height: auto;
+            }
+
+            .day-header {
+                padding: 12px;
+                font-size: 14px;
+            }
+
+            .day-content {
+                padding: 10px;
+                max-height: none;
+            }
+
+            .task-item {
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 10px auto;
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            .form-group {
+                margin-bottom: 12px;
+            }
+
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                font-size: 14px;
+                padding: 10px;
+            }
+
+            .modal-actions {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .modal-actions .btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-logo {
+                height: 40px;
+            }
+
+            .header-title {
+                font-size: 12px;
+            }
+
+            .week-selector button {
+                padding: 5px 8px;
+                font-size: 10px;
+            }
+
+            .week-selector span {
+                font-size: 10px;
+            }
+
+            .btn {
+                padding: 6px 8px;
+                font-size: 9px;
+            }
+
+            .day-header {
+                padding: 8px;
+                font-size: 11px;
+            }
+
+            .task-item {
+                padding: 6px;
+                font-size: 10px;
+            }
+
+            .task-title {
+                font-size: 10px;
+            }
+
+            .league-tag {
+                font-size: 8px;
+                padding: 2px 4px;
+            }
+
+            .modal-content {
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 15px;
+                border-radius: 0;
+                max-height: 100vh;
+                overflow-y: auto;
+            }
+
+            .modal-header h2 {
+                font-size: 16px;
+            }
+
+            .form-group {
+                margin-bottom: 10px;
+            }
+
+            .form-group label {
+                font-size: 12px;
+            }
+
+            .form-group input,
+            .form-group select,
+            .form-group textarea {
+                font-size: 14px;
+                padding: 10px;
+            }
+
+            .modal-actions {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .modal-actions .btn {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 1024px) and (orientation: landscape) {
+            .week-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) and (orientation: landscape) {
+            .week-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .main-container {
+                height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="week-selector">
+                <button onclick="app.changeWeek(-1)">◀ Anterior</button>
+                <span id="weekDisplay" style="font-size: 14px; font-weight: 600;">Semana Actual</span>
+                <button onclick="app.changeWeek(1)">Siguiente ▶</button>
+            </div>
+
+            <div class="header-center">
+                <div class="header-title">CALENDARIO SEMANAL</div>
+                <img src="buho_vision_logo.png" alt="Buho Vision" class="header-logo">
+            </div>
+
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="app.syncData()" title="Sincronizar datos con equipo">
+                    🔄 Sincronizar
+                </button>
+                <button class="btn btn-secondary" onclick="app.exportData()">
+                    📥 Exportar
+                </button>
+                <button class="btn btn-secondary" onclick="app.openModal('addTask')">
+                    ➕ Agregar Material
+                </button>
+                <button class="btn btn-primary" onclick="app.exportToPDF()">
+                    📄 Exportar PDF
+                </button>
+            </div>
+        </div>
+
+        <!-- Grid de 7 días -->
+        <div class="week-grid" id="weekGrid">
+            <!-- Los días se generarán dinámicamente -->
+        </div>
+    </div>
+
+    <!-- Modal para agregar/editar task -->
+    <div class="modal" id="modal-addTask">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">➕ Nueva Tarea</h2>
+                <button class="close-modal" onclick="app.closeModal('addTask')">×</button>
+            </div>
+
+            <form onsubmit="app.saveTask(event)">
+                <input type="hidden" id="task-id">
+
+                <div class="form-group">
+                    <label>Nombre de la Tarea:</label>
+                    <input type="text" id="task-name" required placeholder="Ej: Partido Liga Kings - Final">
+                </div>
+
+                <div class="form-group">
+                    <label>Tipo de Tarea:</label>
+                    <select id="task-type" required onchange="app.toggleRecordingFields()">
+                        <option value="">Seleccionar tipo...</option>
+                        <option value="grabar">📹 A Grabar</option>
+                        <option value="editar-subir">🎬 A Editar y Subir a YouTube</option>
+                        <option value="subir">📤 A Subir a YouTube</option>
+                        <option value="nombrar">📝 Nombrar</option>
+                        <option value="compartir">🔗 Compartir Link</option>
+                    </select>
+                </div>
+
+                <!-- Campos adicionales para "A Grabar" -->
+                <div id="recording-fields" style="display: none;">
+                    <div class="form-group">
+                        <label>Cámara:</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="task-camera" style="flex: 1;">
+                                <option value="">Seleccionar cámara...</option>
+                                <!-- Se llenará dinámicamente -->
+                            </select>
+                            <button type="button" class="btn btn-secondary" onclick="app.openManageCameras()" style="padding: 8px 15px;">
+                                ⚙️ Gestionar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Complejo:</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="task-complex" style="flex: 1;" onchange="app.updateCourtOptions()">
+                                <option value="">Seleccionar complejo...</option>
+                                <!-- Se llenará dinámicamente -->
+                            </select>
+                            <button type="button" class="btn btn-secondary" onclick="app.openManageComplexes()" style="padding: 8px 15px;">
+                                ⚙️ Gestionar
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Cancha:</label>
+                        <select id="task-court">
+                            <option value="">Primero selecciona un complejo...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Ligas (selecciona una o varias):</label>
+                    <div class="leagues-checkboxes" id="task-leagues-container">
+                        <!-- Se llenarán dinámicamente -->
+                    </div>
+                    <div class="error-message" id="leagues-error">Por favor selecciona al menos una liga</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Responsable:</label>
+                    <select id="task-assignee" required>
+                        <option value="">Seleccionar responsable...</option>
+                        <!-- Se llenará dinámicamente -->
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Fecha límite:</label>
+                    <input type="datetime-local" id="task-deadline" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Estado:</label>
+                    <select id="task-status" required>
+                        <option value="pending">Pendiente</option>
+                        <option value="in-progress">En Proceso</option>
+                        <option value="completed">Completado</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Notas (opcional):</label>
+                    <textarea id="task-notes" placeholder="Detalles adicionales..."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-top: 30px;">
+                    <button type="button" class="btn btn-secondary" onclick="app.closeModal('addTask')" style="flex: 1;">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 2;">💾 Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal para ver detalles de task -->
+    <div class="modal" id="modal-viewTask">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📋 Detalles de la Tarea</h2>
+                <button class="close-modal" onclick="app.closeModal('viewTask')">×</button>
+            </div>
+
+            <div id="task-details"></div>
+            <div style="display: flex; gap: 15px; margin-top: 30px;">
+                <button class="btn btn-secondary" onclick="app.copyTask()" style="flex: 1;">📋 Copiar</button>
+                <button class="btn btn-primary" onclick="app.editTask()" style="flex: 1;">✏️ Editar</button>
+                <button class="btn btn-danger" onclick="app.deleteTask()">🗑️ Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para copiar tarea -->
+    <div class="modal" id="modal-copyTask">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>📋 Copiar Tarea</h2>
+                <button class="close-modal" onclick="app.closeModal('copyTask')">×</button>
+            </div>
+
+            <div style="padding: 20px;">
+                <p style="color: #2d3748; margin-bottom: 20px;">Selecciona la nueva fecha y hora para la tarea copiada:</p>
+
+                <div class="form-group">
+                    <label>Nueva Fecha y Hora:</label>
+                    <input type="datetime-local" id="copy-task-deadline" required style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px;">
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="app.closeModal('copyTask')" style="flex: 1;">Cancelar</button>
+                    <button class="btn btn-primary" onclick="app.confirmCopyTask()" style="flex: 1;">✅ Copiar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para copiar todas las tareas de un día -->
+    <div class="modal" id="modal-copyDayTasks">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h2>📋 Copiar Todas las Tareas del Día</h2>
+                <button class="close-modal" onclick="app.closeModal('copyDayTasks')">×</button>
+            </div>
+
+            <div style="padding: 20px;">
+                <div id="copy-day-info" style="background: #f0f9ff; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+
+                <div class="form-group">
+                    <label>Fecha Destino:</label>
+                    <input type="date" id="copy-day-target-date" required style="width: 100%; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px;">
+                    <p style="color: #718096; font-size: 12px; margin-top: 5px;">Las tareas mantendrán sus horas originales</p>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button class="btn btn-secondary" onclick="app.closeModal('copyDayTasks')" style="flex: 1;">Cancelar</button>
+                    <button class="btn btn-primary" onclick="app.confirmCopyDayTasks()" style="flex: 1;">✅ Copiar Todo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para gestionar cámaras -->
+    <div class="modal" id="modal-manageCameras">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>📹 Gestionar Cámaras</h2>
+                <button class="close-modal" onclick="app.closeModal('manageCameras')">×</button>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="new-camera-name" placeholder="Nombre de la cámara (ej: Cámara 1, Veo 4K, etc.)" style="flex: 1; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px;">
+                    <button class="btn btn-primary" onclick="app.addCamera()">➕ Agregar</button>
+                </div>
+            </div>
+
+            <div id="cameras-list" style="max-height: 300px; overflow-y: auto;">
+                <!-- Se llenará dinámicamente -->
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="app.closeModal('manageCameras')" style="width: 100%;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para gestionar complejos -->
+    <div class="modal" id="modal-manageComplexes">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2>🏟️ Gestionar Complejos y Canchas</h2>
+                <button class="close-modal" onclick="app.closeModal('manageComplexes')">×</button>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <h3 style="font-size: 14px; color: #2d3748; margin-bottom: 10px;">Agregar Nuevo Complejo</h3>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="new-complex-name" placeholder="Nombre del complejo" style="flex: 1; padding: 10px; border: 1px solid #cbd5e0; border-radius: 6px;">
+                    <button class="btn btn-primary" onclick="app.addComplex()">➕ Agregar</button>
+                </div>
+            </div>
+
+            <div id="complexes-list" style="max-height: 400px; overflow-y: auto;">
+                <!-- Se llenará dinámicamente -->
+            </div>
+
+            <div style="margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="app.closeModal('manageComplexes')" style="width: 100%;">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading PDF -->
+    <div class="pdf-loading" id="pdfLoading">
+        <div class="spinner"></div>
+        <p style="color: #2d3748; font-weight: 600;">Generando PDF en formato 16:9...</p>
+        <p style="color: #718096; font-size: 12px; margin-top: 10px;">Por favor espera</p>
+    </div>
+
+    <script>
+        const app = {
+            // Data structures
+            tasks: [],
+            history: [],
+            cameras: [],
+            complexes: [],
+            leagues: [
+                'Liga Kings',
+                'Liga Celeste',
+                'Liga Paraguay',
+                'Liga Lokura',
+                'Piria Seven League',
+                'Lomas Baby Futbol',
+                'Liga Femenina Basketball',
+                'Liga Euro',
+                'Liga Futbol Americano',
+                'Liga Senior Maldonado',
+                'Liga PRO',
+                'Liga OFI',
+                'Liga LVH',
+                'Liga Solymar'
+            ],
+            teamMembers: [
+                { id: 1, name: 'Marco García', color: '#667eea' },
+                { id: 2, name: 'Editor 1', color: '#f56565' },
+                { id: 3, name: 'Editor 2', color: '#48bb78' },
+                { id: 4, name: 'Camarógrafo 1', color: '#ed8936' },
+                { id: 5, name: 'Camarógrafo 2', color: '#38b2ac' }
+            ],
+            currentWeekOffset: 0,
+            currentTaskId: null,
+            daysOfWeek: ['Sábado', 'Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'],
+
+            // Initialization
+            init() {
+                this.loadData();
+                this.populateTeamSelects();
+                this.populateLeagueSelects();
+                this.populateCameraSelects();
+                this.populateComplexSelects();
+                this.renderWeek();
+                this.checkDeadlines();
+                setInterval(() => this.checkDeadlines(), 60000);
+            },
+
+            // Data persistence
+            loadData() {
+                const savedTasks = localStorage.getItem('buhoVisionTasks');
+                const savedHistory = localStorage.getItem('buhoVisionHistory');
+                const savedTeam = localStorage.getItem('buhoVisionTeam');
+                const savedLeagues = localStorage.getItem('buhoVisionLeagues');
+                const savedCameras = localStorage.getItem('buhoVisionCameras');
+                const savedComplexes = localStorage.getItem('buhoVisionComplexes');
+
+                if (savedTasks) this.tasks = JSON.parse(savedTasks);
+                if (savedHistory) this.history = JSON.parse(savedHistory);
+                if (savedTeam) this.teamMembers = JSON.parse(savedTeam);
+                if (savedLeagues) this.leagues = JSON.parse(savedLeagues);
+                if (savedCameras) this.cameras = JSON.parse(savedCameras);
+                if (savedComplexes) this.complexes = JSON.parse(savedComplexes);
+            },
+
+            saveData() {
+                localStorage.setItem('buhoVisionTasks', JSON.stringify(this.tasks));
+                localStorage.setItem('buhoVisionHistory', JSON.stringify(this.history));
+                localStorage.setItem('buhoVisionTeam', JSON.stringify(this.teamMembers));
+                localStorage.setItem('buhoVisionLeagues', JSON.stringify(this.leagues));
+                localStorage.setItem('buhoVisionCameras', JSON.stringify(this.cameras));
+                localStorage.setItem('buhoVisionComplexes', JSON.stringify(this.complexes));
+            },
+
+            // Populate dropdowns
+            populateTeamSelects() {
+                const select = document.getElementById('task-assignee');
+                select.innerHTML = '<option value="">Seleccionar responsable...</option>';
+
+                this.teamMembers.forEach(member => {
+                    const option = document.createElement('option');
+                    option.value = member.id;
+                    option.textContent = member.name;
+                    select.appendChild(option);
+                });
+            },
+
+            populateLeagueSelects() {
+                const container = document.getElementById('task-leagues-container');
+                container.innerHTML = '';
+
+                this.leagues.forEach((league, index) => {
+                    const checkboxDiv = document.createElement('div');
+                    checkboxDiv.className = 'league-checkbox';
+                    checkboxDiv.innerHTML = `
+                        <input type="checkbox" id="league-${index}" value="${league}" name="task-leagues">
+                        <label for="league-${index}">${league}</label>
+                    `;
+                    container.appendChild(checkboxDiv);
+                });
+            },
+
+            populateCameraSelects() {
+                const select = document.getElementById('task-camera');
+                if (!select) return;
+
+                select.innerHTML = '<option value="">Seleccionar cámara...</option>';
+                this.cameras.forEach(camera => {
+                    const option = document.createElement('option');
+                    option.value = camera.id;
+                    option.textContent = camera.name;
+                    select.appendChild(option);
+                });
+            },
+
+            populateComplexSelects() {
+                const select = document.getElementById('task-complex');
+                if (!select) return;
+
+                select.innerHTML = '<option value="">Seleccionar complejo...</option>';
+                this.complexes.forEach(complex => {
+                    const option = document.createElement('option');
+                    option.value = complex.id;
+                    option.textContent = complex.name;
+                    select.appendChild(option);
+                });
+            },
+
+            // Toggle recording fields visibility
+            toggleRecordingFields() {
+                const taskType = document.getElementById('task-type').value;
+                const recordingFields = document.getElementById('recording-fields');
+
+                if (taskType === 'grabar') {
+                    recordingFields.style.display = 'block';
+                    // Make fields required when visible
+                    document.getElementById('task-camera').required = true;
+                    document.getElementById('task-complex').required = true;
+                    document.getElementById('task-court').required = true;
+                } else {
+                    recordingFields.style.display = 'none';
+                    // Remove required when hidden
+                    document.getElementById('task-camera').required = false;
+                    document.getElementById('task-complex').required = false;
+                    document.getElementById('task-court').required = false;
+                    // Clear values
+                    document.getElementById('task-camera').value = '';
+                    document.getElementById('task-complex').value = '';
+                    document.getElementById('task-court').value = '';
+                }
+            },
+
+            // Update court options based on selected complex
+            updateCourtOptions() {
+                const complexId = parseInt(document.getElementById('task-complex').value);
+                const courtSelect = document.getElementById('task-court');
+
+                if (!complexId) {
+                    courtSelect.innerHTML = '<option value="">Primero selecciona un complejo...</option>';
+                    return;
+                }
+
+                const complex = this.complexes.find(c => c.id === complexId);
+                if (!complex || !complex.courts || complex.courts.length === 0) {
+                    courtSelect.innerHTML = '<option value="">Este complejo no tiene canchas</option>';
+                    return;
+                }
+
+                courtSelect.innerHTML = '<option value="">Seleccionar cancha...</option>';
+                complex.courts.forEach(court => {
+                    const option = document.createElement('option');
+                    option.value = court;
+                    option.textContent = court;
+                    courtSelect.appendChild(option);
+                });
+            },
+
+            // Camera management
+            openManageCameras() {
+                this.renderCamerasList();
+                this.openModal('manageCameras');
+            },
+
+            renderCamerasList() {
+                const list = document.getElementById('cameras-list');
+                if (this.cameras.length === 0) {
+                    list.innerHTML = '<p style="color: #718096; text-align: center; padding: 20px;">No hay cámaras registradas</p>';
+                    return;
+                }
+
+                list.innerHTML = this.cameras.map(camera => `
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f7fafc; border-radius: 6px; margin-bottom: 8px;">
+                        <span style="color: #2d3748; font-weight: 500;">📹 ${camera.name}</span>
+                        <button class="btn btn-danger" onclick="app.deleteCamera(${camera.id})" style="padding: 6px 12px; font-size: 12px;">🗑️ Eliminar</button>
+                    </div>
+                `).join('');
+            },
+
+            addCamera() {
+                const input = document.getElementById('new-camera-name');
+                const name = input.value.trim();
+
+                if (!name) {
+                    alert('Por favor ingresa un nombre para la cámara');
+                    return;
+                }
+
+                const newCamera = {
+                    id: Date.now(),
+                    name: name
+                };
+
+                this.cameras.push(newCamera);
+                this.saveData();
+                this.populateCameraSelects();
+                this.renderCamerasList();
+                input.value = '';
+
+                this.addToHistory(`Cámara agregada: ${name}`);
+            },
+
+            deleteCamera(cameraId) {
+                if (!confirm('¿Eliminar esta cámara?')) return;
+
+                const camera = this.cameras.find(c => c.id === cameraId);
+                this.cameras = this.cameras.filter(c => c.id !== cameraId);
+                this.saveData();
+                this.populateCameraSelects();
+                this.renderCamerasList();
+
+                if (camera) {
+                    this.addToHistory(`Cámara eliminada: ${camera.name}`);
+                }
+            },
+
+            // Complex management
+            openManageComplexes() {
+                this.renderComplexesList();
+                this.openModal('manageComplexes');
+            },
+
+            renderComplexesList() {
+                const list = document.getElementById('complexes-list');
+                if (this.complexes.length === 0) {
+                    list.innerHTML = '<p style="color: #718096; text-align: center; padding: 20px;">No hay complejos registrados</p>';
+                    return;
+                }
+
+                list.innerHTML = this.complexes.map(complex => {
+                    const courtsHtml = complex.courts && complex.courts.length > 0
+                        ? complex.courts.map(court => `<span style="background: #e6fffa; color: #047857; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-right: 6px;">${court}</span>`).join('')
+                        : '<span style="color: #718096; font-size: 12px;">Sin canchas</span>';
+
+                    return `
+                        <div style="background: #f7fafc; border-radius: 8px; padding: 15px; margin-bottom: 12px;">
+                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
+                                <div style="flex: 1;">
+                                    <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                                        <input type="text" id="complex-name-${complex.id}" value="${complex.name}"
+                                               style="flex: 1; padding: 6px 10px; border: 1px solid #cbd5e0; border-radius: 4px; font-weight: 600; color: #2d3748;"
+                                               onblur="app.updateComplexName(${complex.id}, this.value)">
+                                        <button class="btn btn-secondary" onclick="app.updateComplexName(${complex.id}, document.getElementById('complex-name-${complex.id}').value)"
+                                                style="padding: 4px 8px; font-size: 11px;">
+                                            ✓ Guardar
+                                        </button>
+                                    </div>
+                                    <div style="margin-bottom: 10px;">${courtsHtml}</div>
+                                </div>
+                                <button class="btn btn-danger" onclick="app.deleteComplex(${complex.id})" style="padding: 6px 12px; font-size: 12px;">🗑️</button>
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="new-court-${complex.id}" placeholder="Nueva cancha" style="flex: 1; padding: 6px 10px; border: 1px solid #cbd5e0; border-radius: 4px; font-size: 13px;">
+                                <button class="btn btn-primary" onclick="app.addCourt(${complex.id})" style="padding: 6px 12px; font-size: 12px;">➕ Agregar Cancha</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+
+            addComplex() {
+                const input = document.getElementById('new-complex-name');
+                const name = input.value.trim();
+
+                if (!name) {
+                    alert('Por favor ingresa un nombre para el complejo');
+                    return;
+                }
+
+                const newComplex = {
+                    id: Date.now(),
+                    name: name,
+                    courts: []
+                };
+
+                this.complexes.push(newComplex);
+                this.saveData();
+                this.populateComplexSelects();
+                this.renderComplexesList();
+                input.value = '';
+
+                this.addToHistory(`Complejo agregado: ${name}`);
+            },
+
+            deleteComplex(complexId) {
+                if (!confirm('¿Eliminar este complejo y todas sus canchas?')) return;
+
+                const complex = this.complexes.find(c => c.id === complexId);
+                this.complexes = this.complexes.filter(c => c.id !== complexId);
+                this.saveData();
+                this.populateComplexSelects();
+                this.renderComplexesList();
+
+                if (complex) {
+                    this.addToHistory(`Complejo eliminado: ${complex.name}`);
+                }
+            },
+
+            addCourt(complexId) {
+                const input = document.getElementById(`new-court-${complexId}`);
+                const courtName = input.value.trim();
+
+                if (!courtName) {
+                    alert('Por favor ingresa un nombre para la cancha');
+                    return;
+                }
+
+                const complex = this.complexes.find(c => c.id === complexId);
+                if (!complex) return;
+
+                if (!complex.courts) complex.courts = [];
+                complex.courts.push(courtName);
+
+                this.saveData();
+                this.renderComplexesList();
+                input.value = '';
+
+                this.addToHistory(`Cancha agregada: ${courtName} en ${complex.name}`);
+            },
+
+            updateComplexName(complexId, newName) {
+                const name = newName.trim();
+                if (!name) {
+                    alert('El nombre del complejo no puede estar vacío');
+                    this.renderComplexesList();
+                    return;
+                }
+
+                const complex = this.complexes.find(c => c.id === complexId);
+                if (!complex) return;
+
+                const oldName = complex.name;
+                complex.name = name;
+
+                this.saveData();
+                this.populateComplexSelects();
+                this.renderComplexesList();
+
+                if (oldName !== name) {
+                    this.addToHistory(`Complejo renombrado: "${oldName}" → "${name}"`);
+                    this.showNotification('Complejo actualizado', 'success');
+                }
+            },
+
+            // Week rendering (Saturday start)
+            renderWeek() {
+                const grid = document.getElementById('weekGrid');
+                grid.innerHTML = '';
+
+                // Calculate week dates (starting Saturday)
+                const today = new Date();
+                const currentDay = today.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+
+                // Calculate days since Saturday
+                // If today is Saturday (6), daysSinceSaturday = 0
+                // If today is Sunday (0), daysSinceSaturday = 1
+                // If today is Monday (1), daysSinceSaturday = 2, etc.
+                const daysSinceSaturday = currentDay === 6 ? 0 : (currentDay + 1);
+
+                const saturday = new Date(today);
+                saturday.setDate(today.getDate() - daysSinceSaturday + (this.currentWeekOffset * 7));
+
+                // Update week display (Saturday to Friday)
+                const weekEnd = new Date(saturday);
+                weekEnd.setDate(saturday.getDate() + 6);
+                document.getElementById('weekDisplay').textContent =
+                    `${saturday.getDate()}/${saturday.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}/${weekEnd.getFullYear()}`;
+
+                // Create 7 days (Saturday to Friday)
+                for (let i = 0; i < 7; i++) {
+                    const dayDate = new Date(saturday);
+                    dayDate.setDate(saturday.getDate() + i);
+
+                    const dayCard = document.createElement('div');
+                    dayCard.className = 'day-card';
+
+                    // Get tasks for this day
+                    const dayTasks = this.getTasksForDay(dayDate);
+
+                    dayCard.innerHTML = `
+                        <div class="day-header">
+                            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                <div style="display: flex; align-items: center; gap: 5px;">
+                                    ${this.daysOfWeek[i]}
+                                    <span class="day-counter">${dayTasks.length}</span>
+                                </div>
+                                ${dayTasks.length > 0 ? `
+                                    <button class="btn btn-secondary" onclick="app.copyDayTasks('${dayDate.toISOString()}')" style="padding: 4px 8px; font-size: 11px;" title="Copiar todas las tareas del día">
+                                        📋
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <div class="day-date">
+                                ${dayDate.getDate()}/${dayDate.getMonth() + 1}/${dayDate.getFullYear()}
+                            </div>
+                        </div>
+                        <div class="day-content" id="day-${i}">
+                            ${dayTasks.length === 0 ? '<div class="empty-day">Sin materiales</div>' : ''}
+                        </div>
+                    `;
+
+                    grid.appendChild(dayCard);
+
+                    // Add task items
+                    if (dayTasks.length > 0) {
+                        const dayContent = document.getElementById(`day-${i}`);
+                        dayTasks.forEach((task) => {
+                            const taskEl = this.createTaskElement(task);
+                            dayContent.appendChild(taskEl);
+                        });
+                    }
+                }
+            },
+
+            getTasksForDay(date) {
+                return this.tasks.filter(task => {
+                    const taskDate = new Date(task.deadline);
+                    return taskDate.getFullYear() === date.getFullYear() &&
+                           taskDate.getMonth() === date.getMonth() &&
+                           taskDate.getDate() === date.getDate();
+                }).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+            },
+
+            createTaskElement(task) {
+                const assignee = this.teamMembers.find(m => m.id == task.assignee);
+                const leagues = task.leagues || (task.league ? [task.league] : []);
+
+                const itemEl = document.createElement('div');
+                itemEl.className = 'task-item';
+
+                const typeIcons = {
+                    'grabar': '📹',
+                    'editar-subir': '🎬',
+                    'subir': '📤',
+                    'nombrar': '📝',
+                    'compartir': '🔗'
+                };
+
+                const statusLabels = {
+                    'pending': '⏳ Pendiente',
+                    'in-progress': '🔄 En Proceso',
+                    'completed': '✅ Completado'
+                };
+
+                itemEl.innerHTML = `
+                    <div class="task-title">${typeIcons[task.type] || '📋'} ${task.name}</div>
+                    ${leagues.length > 0 ? `
+                        <div class="task-leagues">
+                            ${leagues.map(l => `<span class="league-tag">${l}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                    <div class="task-assignee">
+                        <span class="mini-avatar" style="background: ${assignee?.color || '#667eea'}"></span>
+                        ${assignee?.name || 'Sin asignar'}
+                    </div>
+                    <span class="task-status-indicator status-${task.status}">
+                        ${statusLabels[task.status]}
+                    </span>
+                `;
+
+                itemEl.onclick = () => this.viewTask(task.id);
+                return itemEl;
+            },
+
+            changeWeek(offset) {
+                this.currentWeekOffset += offset;
+                this.renderWeek();
+            },
+
+            // Modal management
+            openModal(modalName, skipReset = false) {
+                const modal = document.getElementById(`modal-${modalName}`);
+                modal.classList.add('active');
+
+                if (modalName === 'addTask' && !skipReset) {
+                    // Reset form
+                    document.getElementById('task-id').value = '';
+                    document.getElementById('task-name').value = '';
+                    document.getElementById('task-type').value = '';
+                    document.getElementById('task-assignee').value = '';
+                    document.getElementById('task-deadline').value = '';
+                    document.getElementById('task-status').value = 'pending';
+                    document.getElementById('task-notes').value = '';
+                    document.getElementById('modal-title').textContent = '➕ Nueva Tarea';
+                    document.querySelectorAll('input[name="task-leagues"]').forEach(cb => cb.checked = false);
+                    document.getElementById('leagues-error').style.display = 'none';
+                }
+            },
+
+            closeModal(modalName) {
+                const modal = document.getElementById(`modal-${modalName}`);
+                modal.classList.remove('active');
+            },
+
+            // Task CRUD operations
+            saveTask(event) {
+                event.preventDefault();
+
+                // Validate leagues selection
+                const selectedLeagues = Array.from(document.querySelectorAll('input[name="task-leagues"]:checked'))
+                    .map(cb => cb.value);
+
+                if (selectedLeagues.length === 0) {
+                    document.getElementById('leagues-error').style.display = 'block';
+                    return;
+                }
+                document.getElementById('leagues-error').style.display = 'none';
+
+                const taskId = document.getElementById('task-id').value;
+                const taskType = document.getElementById('task-type').value;
+
+                const taskData = {
+                    id: taskId ? parseInt(taskId) : Date.now(),
+                    name: document.getElementById('task-name').value,
+                    type: taskType,
+                    leagues: selectedLeagues,
+                    assignee: parseInt(document.getElementById('task-assignee').value),
+                    deadline: document.getElementById('task-deadline').value,
+                    status: document.getElementById('task-status').value,
+                    notes: document.getElementById('task-notes').value,
+                    createdAt: taskId ? this.tasks.find(t => t.id === parseInt(taskId))?.createdAt : new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                // Add recording fields if task type is "grabar"
+                if (taskType === 'grabar') {
+                    taskData.camera = document.getElementById('task-camera').value;
+                    taskData.complex = document.getElementById('task-complex').value;
+                    taskData.court = document.getElementById('task-court').value;
+                }
+
+                if (taskId) {
+                    const index = this.tasks.findIndex(t => t.id === parseInt(taskId));
+                    this.tasks[index] = taskData;
+                    this.addHistory('Sistema', `Tarea actualizada: ${taskData.name}`);
+                    this.showNotification('Tarea actualizada exitosamente', 'success');
+                } else {
+                    this.tasks.push(taskData);
+                    this.addHistory('Sistema', `Nueva tarea creada: ${taskData.name}`);
+                    this.showNotification('Tarea creada exitosamente', 'success');
+                }
+
+                this.saveData();
+                this.renderWeek();
+                this.closeModal('addTask');
+            },
+
+            viewTask(taskId) {
+                this.currentTaskId = taskId;
+                const task = this.tasks.find(t => t.id === taskId);
+                const assignee = this.teamMembers.find(m => m.id == task.assignee);
+                const deadline = new Date(task.deadline);
+
+                const typeLabels = {
+                    'grabar': '📹 A Grabar',
+                    'editar-subir': '🎬 A Editar y Subir a YouTube',
+                    'subir': '📤 A Subir a YouTube',
+                    'nombrar': '📝 Nombrar',
+                    'compartir': '🔗 Compartir Link'
+                };
+
+                const statusLabels = {
+                    'pending': '⏳ Pendiente',
+                    'in-progress': '🔄 En Proceso',
+                    'completed': '✅ Completado'
+                };
+
+                const leagues = task.leagues || (task.league ? [task.league] : []);
+                const leaguesDisplay = leagues.length > 0
+                    ? `<div class="task-leagues">${leagues.map(l => `<span class="league-tag" style="padding: 4px 10px; font-size: 12px;">${l}</span>`).join('')}</div>`
+                    : '<p style="color: #718096; font-size: 14px;">Sin liga asignada</p>';
+
+                // Get recording details if task type is "grabar"
+                let recordingDetails = '';
+                if (task.type === 'grabar') {
+                    const camera = this.cameras.find(c => c.id == task.camera);
+                    const complex = this.complexes.find(c => c.id == task.complex);
+
+                    recordingDetails = `
+                        <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 6px;">
+                            <strong style="color: #1e40af; font-size: 13px; display: block; margin-bottom: 10px;">📹 Detalles de Grabación</strong>
+                            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; font-size: 13px;">
+                                <div>
+                                    <strong style="color: #4a5568;">Cámara:</strong>
+                                    <p style="margin-top: 3px; color: #2d3748;">${camera?.name || 'No asignada'}</p>
+                                </div>
+                                <div>
+                                    <strong style="color: #4a5568;">Complejo:</strong>
+                                    <p style="margin-top: 3px; color: #2d3748;">${complex?.name || 'No asignado'}</p>
+                                </div>
+                                <div>
+                                    <strong style="color: #4a5568;">Cancha:</strong>
+                                    <p style="margin-top: 3px; color: #2d3748;">${task.court || 'No asignada'}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                const detailsHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <div>
+                            <h3 style="color: #2d3748; margin-bottom: 10px;">${task.name}</h3>
+                            ${leaguesDisplay}
+                        </div>
+
+                        ${recordingDetails}
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <strong style="color: #4a5568; font-size: 13px;">Tipo:</strong>
+                                <p style="margin-top: 5px;">${typeLabels[task.type]}</p>
+                            </div>
+                            <div>
+                                <strong style="color: #4a5568; font-size: 13px;">Estado:</strong>
+                                <p style="margin-top: 5px;">${statusLabels[task.status]}</p>
+                            </div>
+                            <div>
+                                <strong style="color: #4a5568; font-size: 13px;">Responsable:</strong>
+                                <p style="margin-top: 5px; display: flex; align-items: center; gap: 8px;">
+                                    <span class="avatar" style="background: ${assignee?.color || '#667eea'}">${assignee?.name?.charAt(0) || '?'}</span>
+                                    ${assignee?.name || 'Sin asignar'}
+                                </p>
+                            </div>
+                            <div>
+                                <strong style="color: #4a5568; font-size: 13px;">Fecha Límite:</strong>
+                                <p style="margin-top: 5px;">${deadline.toLocaleString('es-ES')}</p>
+                            </div>
+                        </div>
+
+                        ${task.notes ? `
+                            <div>
+                                <strong style="color: #4a5568; font-size: 13px;">Notas:</strong>
+                                <p style="margin-top: 5px; color: #2d3748; line-height: 1.5;">${task.notes}</p>
+                            </div>
+                        ` : ''}
+
+                        <div style="font-size: 12px; color: #a0aec0; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+                            <p>Creado: ${new Date(task.createdAt).toLocaleString('es-ES')}</p>
+                            ${task.updatedAt ? `<p>Actualizado: ${new Date(task.updatedAt).toLocaleString('es-ES')}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('task-details').innerHTML = detailsHTML;
+                this.openModal('viewTask');
+            },
+
+            editTask() {
+                const task = this.tasks.find(t => t.id === this.currentTaskId);
+                this.closeModal('viewTask');
+                this.openModal('addTask', true);
+
+                document.getElementById('task-id').value = task.id;
+                document.getElementById('task-name').value = task.name;
+                document.getElementById('task-type').value = task.type;
+                document.getElementById('task-assignee').value = task.assignee;
+                document.getElementById('task-deadline').value = task.deadline;
+                document.getElementById('task-status').value = task.status;
+                document.getElementById('task-notes').value = task.notes || '';
+                document.getElementById('modal-title').textContent = '✏️ Editar Tarea';
+
+                // Toggle recording fields and load values if applicable
+                this.toggleRecordingFields();
+                if (task.type === 'grabar') {
+                    document.getElementById('task-camera').value = task.camera || '';
+                    document.getElementById('task-complex').value = task.complex || '';
+
+                    // Update court options and then set the value
+                    if (task.complex) {
+                        this.updateCourtOptions();
+                        setTimeout(() => {
+                            document.getElementById('task-court').value = task.court || '';
+                        }, 50);
+                    }
+                }
+
+                const leagues = task.leagues || (task.league ? [task.league] : []);
+                document.querySelectorAll('input[name="task-leagues"]').forEach(cb => {
+                    cb.checked = leagues.includes(cb.value);
+                });
+
+                document.getElementById('leagues-error').style.display = 'none';
+            },
+
+            deleteTask() {
+                if (!confirm('¿Estás seguro de que quieres eliminar esta tarea?')) return;
+
+                const task = this.tasks.find(t => t.id === this.currentTaskId);
+                this.tasks = this.tasks.filter(t => t.id !== this.currentTaskId);
+                this.addHistory('Sistema', `Tarea eliminada: ${task.name}`);
+                this.saveData();
+                this.renderWeek();
+                this.closeModal('viewTask');
+                this.showNotification('Tarea eliminada', 'success');
+            },
+
+            // Copy task
+            copyTask() {
+                const task = this.tasks.find(t => t.id === this.currentTaskId);
+
+                // Suggest next week same day/time
+                const currentDeadline = new Date(task.deadline);
+                const nextWeek = new Date(currentDeadline);
+                nextWeek.setDate(currentDeadline.getDate() + 7);
+
+                // Format for datetime-local input
+                const year = nextWeek.getFullYear();
+                const month = String(nextWeek.getMonth() + 1).padStart(2, '0');
+                const day = String(nextWeek.getDate()).padStart(2, '0');
+                const hours = String(nextWeek.getHours()).padStart(2, '0');
+                const minutes = String(nextWeek.getMinutes()).padStart(2, '0');
+                const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+
+                document.getElementById('copy-task-deadline').value = formattedDate;
+
+                this.closeModal('viewTask');
+                this.openModal('copyTask');
+            },
+
+            confirmCopyTask() {
+                const task = this.tasks.find(t => t.id === this.currentTaskId);
+                const newDeadline = document.getElementById('copy-task-deadline').value;
+
+                if (!newDeadline) {
+                    alert('Por favor selecciona una fecha y hora');
+                    return;
+                }
+
+                // Create copy with new ID and deadline
+                const copiedTask = {
+                    ...task,
+                    id: Date.now(),
+                    deadline: newDeadline,
+                    status: 'pending', // Reset status to pending
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+
+                this.tasks.push(copiedTask);
+                this.addHistory('Sistema', `Tarea copiada: ${task.name}`);
+                this.saveData();
+                this.renderWeek();
+                this.closeModal('copyTask');
+                this.showNotification('✅ Tarea copiada exitosamente', 'success');
+            },
+
+            // Copy all tasks from a day
+            copyDayTasks(dayDateStr) {
+                this.currentCopyDayDate = dayDateStr;
+                const dayDate = new Date(dayDateStr);
+                const dayTasks = this.getTasksForDay(dayDate);
+
+                // Show info about tasks to be copied
+                const infoHtml = `
+                    <p style="color: #2d3748; font-weight: 600; margin-bottom: 10px;">
+                        📅 ${dayDate.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                    </p>
+                    <p style="color: #718096; font-size: 14px;">
+                        Se copiarán <strong>${dayTasks.length}</strong> tarea${dayTasks.length !== 1 ? 's' : ''}:
+                    </p>
+                    <ul style="color: #4a5568; font-size: 13px; margin-top: 10px; padding-left: 20px;">
+                        ${dayTasks.map(t => `<li>${t.name}</li>`).join('')}
+                    </ul>
+                `;
+                document.getElementById('copy-day-info').innerHTML = infoHtml;
+
+                // Suggest next week same day
+                const nextWeek = new Date(dayDate);
+                nextWeek.setDate(dayDate.getDate() + 7);
+                const year = nextWeek.getFullYear();
+                const month = String(nextWeek.getMonth() + 1).padStart(2, '0');
+                const day = String(nextWeek.getDate()).padStart(2, '0');
+                document.getElementById('copy-day-target-date').value = `${year}-${month}-${day}`;
+
+                this.openModal('copyDayTasks');
+            },
+
+            confirmCopyDayTasks() {
+                const targetDateStr = document.getElementById('copy-day-target-date').value;
+                if (!targetDateStr) {
+                    alert('Por favor selecciona una fecha destino');
+                    return;
+                }
+
+                const sourceDayDate = new Date(this.currentCopyDayDate);
+                const targetDate = new Date(targetDateStr);
+                const dayTasks = this.getTasksForDay(sourceDayDate);
+
+                if (dayTasks.length === 0) {
+                    alert('No hay tareas para copiar');
+                    return;
+                }
+
+                // Calculate day difference
+                const dayDiff = Math.floor((targetDate - sourceDayDate) / (1000 * 60 * 60 * 24));
+
+                // Copy all tasks
+                let copiedCount = 0;
+                dayTasks.forEach(task => {
+                    const originalDeadline = new Date(task.deadline);
+                    const newDeadline = new Date(originalDeadline);
+                    newDeadline.setDate(originalDeadline.getDate() + dayDiff);
+
+                    const copiedTask = {
+                        ...task,
+                        id: Date.now() + copiedCount, // Ensure unique IDs
+                        deadline: newDeadline.toISOString().slice(0, 16),
+                        status: 'pending',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString()
+                    };
+
+                    this.tasks.push(copiedTask);
+                    copiedCount++;
+                });
+
+                this.addHistory('Sistema', `${copiedCount} tareas copiadas desde ${sourceDayDate.toLocaleDateString('es-ES')} a ${targetDate.toLocaleDateString('es-ES')}`);
+                this.saveData();
+                this.renderWeek();
+                this.closeModal('copyDayTasks');
+                this.showNotification(`✅ ${copiedCount} tarea${copiedCount !== 1 ? 's' : ''} copiada${copiedCount !== 1 ? 's' : ''} exitosamente`, 'success');
+            },
+
+            // History
+            addHistory(user, action) {
+                this.history.push({
+                    user,
+                    action,
+                    timestamp: new Date().toISOString()
+                });
+                if (this.history.length > 100) {
+                    this.history = this.history.slice(-100);
+                }
+                this.saveData();
+            },
+
+            // Notifications
+            showNotification(message, type = 'success') {
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                notification.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 24px;">${type === 'success' ? '✅' : '❌'}</span>
+                        <div>
+                            <div style="font-weight: 600; margin-bottom: 3px;">${type === 'success' ? 'Éxito' : 'Error'}</div>
+                            <div style="font-size: 14px; color: #4a5568;">${message}</div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 3000);
+            },
+
+            // Deadline checking
+            checkDeadlines() {
+                const now = new Date();
+                this.tasks.forEach(task => {
+                    if (task.status === 'completed') return;
+
+                    const deadline = new Date(task.deadline);
+                    const hoursUntil = (deadline - now) / (1000 * 60 * 60);
+
+                    if (hoursUntil > 0 && hoursUntil <= 24 && !task.notified24h) {
+                        this.showNotification(`⏰ Material "${task.name}" vence en menos de 24 horas`, 'error');
+                        task.notified24h = true;
+                        this.saveData();
+                    }
+                });
+            },
+
+            // Export/Import functionality
+            exportData() {
+                const dataStr = JSON.stringify({
+                    tasks: this.tasks,
+                    history: this.history,
+                    leagues: this.leagues,
+                    teamMembers: this.teamMembers,
+                    lastSync: new Date().toISOString()
+                }, null, 2);
+
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `buho-vision-datos-${new Date().toISOString().split('T')[0]}.json`;
+                link.click();
+
+                this.showNotification('Datos exportados exitosamente. Guarda este archivo en Google Drive como "datos_compartidos.json"', 'success');
+            },
+
+            syncData() {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'application/json';
+
+                input.onchange = (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        try {
+                            const data = JSON.parse(event.target.result);
+
+                            if (!data.tasks || !data.leagues || !data.teamMembers) {
+                                this.showNotification('❌ Archivo JSON no válido. Asegúrate de usar el archivo correcto.', 'error');
+                                return;
+                            }
+
+                            const hasLocalData = this.tasks.length > 0;
+                            let proceed = true;
+
+                            if (hasLocalData) {
+                                proceed = confirm(
+                                    `⚠️ ATENCIÓN:\n\n` +
+                                    `Tienes ${this.tasks.length} materiales locales.\n` +
+                                    `El archivo tiene ${data.tasks.length} materiales.\n\n` +
+                                    `¿Quieres REEMPLAZAR tus datos locales con los del archivo compartido?\n\n` +
+                                    `(Haz clic en CANCELAR y luego en "📥 Exportar" si quieres guardar tus datos primero)`
+                                );
+                            }
+
+                            if (!proceed) {
+                                this.showNotification('Sincronización cancelada', 'error');
+                                return;
+                            }
+
+                            this.tasks = data.tasks || [];
+                            this.history = data.history || [];
+                            this.leagues = data.leagues || [];
+                            this.teamMembers = data.teamMembers || [];
+
+                            this.saveData();
+                            this.renderWeek();
+                            this.populateTeamSelects();
+                            this.populateLeagueSelects();
+
+                            this.showNotification(
+                                `✅ Sincronización exitosa!\n📋 ${data.tasks.length} materiales cargados`,
+                                'success'
+                            );
+                        } catch (error) {
+                            console.error('Error al cargar datos:', error);
+                            this.showNotification('❌ Error al leer el archivo. Asegúrate de que sea un JSON válido.', 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                };
+
+                input.click();
+            },
+
+            // PDF Export
+            async exportToPDF() {
+                const loading = document.getElementById('pdfLoading');
+                loading.classList.add('active');
+
+                try {
+                    const element = document.querySelector('.main-container');
+
+                    const canvas = await html2canvas(element, {
+                        scale: 2,
+                        backgroundColor: '#ffffff',
+                        logging: false,
+                        width: 1920,
+                        height: 1080
+                    });
+
+                    const imgData = canvas.toDataURL('image/png');
+
+                    const { jsPDF } = window.jspdf;
+                    const pdf = new jsPDF({
+                        orientation: 'landscape',
+                        unit: 'mm',
+                        format: [297, 210]
+                    });
+
+                    const imgWidth = 297;
+                    const imgHeight = 167;
+
+                    pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+
+                    const today = new Date();
+                    const fileName = `Calendario_Semana_${today.getDate()}-${today.getMonth()+1}-${today.getFullYear()}.pdf`;
+
+                    pdf.save(fileName);
+
+                    setTimeout(() => {
+                        loading.classList.remove('active');
+                    }, 500);
+
+                } catch (error) {
+                    console.error('Error generando PDF:', error);
+                    alert('Error al generar el PDF. Por favor intenta nuevamente.');
+                    loading.classList.remove('active');
+                }
+            }
+        };
+
+        // Initialize app
+        app.init();
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                app.exportToPDF();
+            }
+        });
+
+        // Close modals on ESC key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                app.closeModal('addTask');
+                app.closeModal('viewTask');
+            }
+        });
+
+        // Close modal on outside click
+        document.querySelectorAll('.modal').forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    const modalId = modal.id.replace('modal-', '');
+                    app.closeModal(modalId);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

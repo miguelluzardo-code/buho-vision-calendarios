@@ -1615,14 +1615,18 @@
                 'Liga PRO',
                 'Liga OFI',
                 'Liga LVH',
-                'Liga Solymar'
+                'Liga Solymar',
+                'Liga Pando',
+                'Liga Solo Futbol',
+                'Liga America',
+                'Liga Uruguay'
             ],
             teamMembers: [
-                { id: 1, name: 'Marco García', color: '#4ade80' },
-                { id: 2, name: 'Editor 1', color: '#f56565' },
-                { id: 3, name: 'Editor 2', color: '#48bb78' },
-                { id: 4, name: 'Camarógrafo 1', color: '#ed8936' },
-                { id: 5, name: 'Camarógrafo 2', color: '#38b2ac' }
+                { id: 1, name: 'AUTOGESTION', color: '#4ade80' },
+                { id: 2, name: 'MAURO', color: '#f56565' },
+                { id: 3, name: 'AGUSTIN', color: '#48bb78' },
+                { id: 4, name: 'MATEO', color: '#ed8936' },
+                { id: 5, name: 'MAURO Y AGUSTIN', color: '#38b2ac' }
             ],
             currentTaskId: null,
             currentView: 'calendar',
@@ -1659,9 +1663,107 @@
                 if (savedTasks) this.tasks = JSON.parse(savedTasks);
                 if (savedHistory) this.history = JSON.parse(savedHistory);
                 if (savedTeam) this.teamMembers = JSON.parse(savedTeam);
-                if (savedCameras) this.cameras = JSON.parse(savedCameras);
-                if (savedComplexes) this.complexes = JSON.parse(savedComplexes);
+                if (savedCameras) {
+                    this.cameras = JSON.parse(savedCameras);
+                } else {
+                    // Default cameras from production schedule
+                    this.cameras = [
+                        { id: 1, name: '50934' },
+                        { id: 2, name: '60648' },
+                        { id: 3, name: '12766' },
+                        { id: 4, name: '52861' },
+                        { id: 5, name: '60131' },
+                        { id: 6, name: '285CE' },
+                        { id: 7, name: '28402' },
+                        { id: 8, name: '60139' },
+                        { id: 9, name: '64670' },
+                        { id: 10, name: '10926' },
+                        { id: 11, name: '49133' },
+                        { id: 12, name: '49056' },
+                        { id: 13, name: '25202' },
+                        { id: 14, name: '61167' },
+                        { id: 15, name: '07082' },
+                        { id: 16, name: '50901' },
+                        { id: 17, name: '50906' },
+                        { id: 18, name: '2588E' },
+                        { id: 19, name: '05007' },
+                        { id: 20, name: '04697' },
+                        { id: 21, name: '78849' },
+                        { id: 22, name: '77698' }
+                    ];
+                }
+                if (savedComplexes) {
+                    this.complexes = JSON.parse(savedComplexes);
+                } else {
+                    // Default complexes/locations from production schedule
+                    this.complexes = [
+                        { id: 1, name: 'LOMAS 3', courts: ['Cancha 1', 'Cancha 2', 'Cancha 3'] },
+                        { id: 2, name: 'ZONA LAB', courts: ['Cancha 1', 'Cancha 2', 'Cancha 3'] },
+                        { id: 3, name: 'LOS CARDALES', courts: ['Cancha 1', 'Cancha 2', 'Cancha 3', 'Cancha 4'] },
+                        { id: 4, name: 'LA CANTERA', courts: ['Cancha 1', 'Cancha 2', 'Cancha 3', 'Cancha 4', 'Cancha 5'] },
+                        { id: 5, name: 'PDR F5', courts: ['Cancha Principal'] },
+                        { id: 6, name: 'NAZZASI', courts: ['Cancha 1', 'Cancha 2'] },
+                        { id: 7, name: 'POLIDEPORTIVO CARRASCO', courts: ['Cancha 1', 'Cancha 2'] }
+                    ];
+                }
                 if (savedLeagues) this.leagues = JSON.parse(savedLeagues);
+
+                // Load March 16-22, 2026 schedule if no tasks exist
+                if (this.tasks.length === 0) {
+                    this.loadMarch2026Schedule();
+                }
+            },
+
+            loadMarch2026Schedule() {
+                // Schedule from PDF: MARZO 2026 - 16_3 A 22_3
+                const schedule = [
+                    // LUNES 16
+                    { name: 'SOLYMAR - LOMAS 3', leagues: ['Liga Solymar'], type: 'grabar', assignee: 1, deadline: '2026-03-16T18:00', status: 'pending', notes: 'Cámaras: 50934, 60648, 12766 - 3 partidos', complex: 1, camera: 1 },
+                    { name: 'LIGA PRO - POLIDEPORTIVO CARRASCO', leagues: ['Liga PRO'], type: 'grabar', assignee: 2, deadline: '2026-03-16T19:00', status: 'pending', notes: 'Cámaras: 61167, 49133 - 0 partidos', complex: 7, camera: 14 },
+
+                    // MARTES 17
+                    { name: 'SOLYMAR - LOMAS 3 + ZONA LAB', leagues: ['Liga Solymar'], type: 'grabar', assignee: 1, deadline: '2026-03-17T18:00', status: 'pending', notes: 'Cámaras: 50934, 60648, 12766 - 16 partidos total', complex: 1, camera: 1 },
+                    { name: 'LIGA SOLO FUTBOL - PDR F5', leagues: ['Liga Solo Futbol'], type: 'grabar', assignee: 1, deadline: '2026-03-17T20:00', status: 'completed', notes: 'Cámaras: 10926 - 20:00-23:00 - 3 partidos - COMPLETA', complex: 5, camera: 10 },
+
+                    // MIERCOLES 18
+                    { name: 'SOLYMAR - LOMAS 3', leagues: ['Liga Solymar'], type: 'grabar', assignee: 1, deadline: '2026-03-18T18:00', status: 'pending', notes: '2 partidos', complex: 1, camera: 1 },
+                    { name: 'SOLYMAR - ZONA LAB', leagues: ['Liga Solymar'], type: 'grabar', assignee: 1, deadline: '2026-03-18T19:00', status: 'completed', notes: '4 partidos - COMPLETA', complex: 2, camera: 1 },
+                    { name: 'LIGA KINGS - ZONA LAB (3 cams)', leagues: ['Liga Kings'], type: 'grabar', assignee: 1, deadline: '2026-03-18T18:00', status: 'completed', notes: 'Cámaras: 52861, 60131, 285CE - 6 partidos - COMPLETA', complex: 2, camera: 4 },
+                    { name: 'LIGA KINGS - ZONA LAB (2 cams) - Sesión 1', leagues: ['Liga Kings'], type: 'grabar', assignee: 1, deadline: '2026-03-18T19:00', status: 'pending', notes: 'Cámaras: 52861, 60131 - 6 partidos', complex: 2, camera: 4 },
+                    { name: 'LIGA KINGS - ZONA LAB (2 cams) - Sesión 2', leagues: ['Liga Kings'], type: 'grabar', assignee: 1, deadline: '2026-03-18T20:00', status: 'pending', notes: 'Cámaras: 52861, 60131 - 7 partidos', complex: 2, camera: 4 },
+                    { name: 'LIGA PANDO - 3 cámaras', leagues: ['Liga Pando'], type: 'grabar', assignee: 1, deadline: '2026-03-18T18:00', status: 'pending', notes: 'Cámaras: 60139, 6467 - 9 partidos', complex: 2, camera: 8 },
+                    { name: 'LIGA PANDO - 2 cámaras', leagues: ['Liga Pando'], type: 'grabar', assignee: 1, deadline: '2026-03-18T19:00', status: 'pending', notes: 'Cámaras: 60139, 6467 - 0 partidos', complex: 2, camera: 8 },
+                    { name: 'LIGA PRO - NAZZASI', leagues: ['Liga PRO'], type: 'grabar', assignee: 4, deadline: '2026-03-18T19:00', status: 'completed', notes: 'Cámaras: 49056, 25202 - MATEO - 3 partidos - COMPLETA', complex: 6, camera: 12 },
+
+                    // JUEVES 19
+                    { name: 'SOLYMAR - LOMAS 3', leagues: ['Liga Solymar'], type: 'grabar', assignee: 1, deadline: '2026-03-19T18:00', status: 'pending', notes: '0 partidos programados', complex: 1, camera: 1 },
+
+                    // VIERNES 20
+                    { name: 'SOLYMAR - ZONA LAB', leagues: ['Liga Solymar'], type: 'grabar', assignee: 1, deadline: '2026-03-20T18:00', status: 'pending', notes: 'Cámaras: 50934, 60648, 12766 - 2 partidos', complex: 2, camera: 1 },
+                    { name: 'LIGA PRO - AUTOGESTION', leagues: ['Liga PRO'], type: 'grabar', assignee: 1, deadline: '2026-03-20T19:00', status: 'pending', notes: 'AUTOGESTION', complex: 2, camera: 1 },
+
+                    // SABADO 21
+                    { name: 'SOLYMAR - ZONA LAB', leagues: ['Liga Solymar'], type: 'grabar', assignee: 1, deadline: '2026-03-21T10:00', status: 'pending', notes: '3 partidos', complex: 2, camera: 1 },
+                    { name: 'LIGA CELESTE - LA CANTERA', leagues: ['Liga Celeste'], type: 'grabar', assignee: 5, deadline: '2026-03-21T10:00', status: 'pending', notes: '5 equipos - MAURO Y AGUSTIN - 10 partidos', complex: 4, camera: 1 },
+
+                    // DOMINGO 22
+                    { name: 'SOLYMAR - LOS CARDALES', leagues: ['Liga Solymar'], type: 'grabar', assignee: 1, deadline: '2026-03-22T10:00', status: 'pending', notes: '4 equipos - 6 partidos - Cámaras: 285ce, 49133, 49056, 10926, 50901, 50906 - 3 trípodes guardados en cardales', complex: 3, camera: 6 },
+                    { name: 'LIGA AMERICA - LOS CARDALES', leagues: ['Liga America'], type: 'grabar', assignee: 2, deadline: '2026-03-22T10:00', status: 'pending', notes: '2 equipos - MAURO - Cámaras: 2588e, 07082, 61167 - 2 partidos', complex: 3, camera: 18 },
+                    { name: 'LIGA CELESTE - DOMINGO', leagues: ['Liga Celeste'], type: 'grabar', assignee: 5, deadline: '2026-03-22T10:00', status: 'pending', notes: '4 equipos - MAURO Y AGUSTIN - 12 partidos', complex: 4, camera: 1 },
+                    { name: 'LIGA URUGUAY - LA CANTERA', leagues: ['Liga Uruguay'], type: 'grabar', assignee: 1, deadline: '2026-03-22T10:00', status: 'pending', notes: 'Cámara: 28402 - 0 partidos + 2 partidos (FALTA INFO)', complex: 4, camera: 7 },
+                    { name: 'LIGA SOLO FUTBOL - PDR F5 (DOMINGO)', leagues: ['Liga Solo Futbol'], type: 'grabar', assignee: 1, deadline: '2026-03-22T15:00', status: 'pending', notes: 'Cámara: 10926 - 2 partidos - PENDIENTE', complex: 5, camera: 10 },
+                    { name: 'LIGA PRO - NAZZASI (DOMINGO)', leagues: ['Liga PRO'], type: 'grabar', assignee: 3, deadline: '2026-03-22T10:00', status: 'pending', notes: 'Cámaras: 285ce, 49133, 49056, 10926 - AGUSTIN - 10 partidos', complex: 6, camera: 6 }
+                ];
+
+                // Add tasks with unique IDs
+                schedule.forEach((task, index) => {
+                    this.tasks.push({
+                        id: Date.now() + index,
+                        ...task
+                    });
+                });
+
+                this.saveData();
             },
 
             saveData() {

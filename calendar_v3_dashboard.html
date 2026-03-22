@@ -1087,7 +1087,7 @@
             ],
             currentWeekOffset: 0,
             currentTaskId: null,
-            daysOfWeek: ['Sábado', 'Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'],
+            daysOfWeek: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'],
 
             // Initialization
             init() {
@@ -1515,29 +1515,25 @@
                 const grid = document.getElementById('weekGrid');
                 grid.innerHTML = '';
 
-                // Calculate week dates (starting Saturday)
+                // Calculate week dates (starting Monday)
+                // Default to March 16, 2026 (Monday) for initial view
+                const defaultStart = new Date(2026, 2, 16); // March 16, 2026
                 const today = new Date();
-                const currentDay = today.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
 
-                // Calculate days since Saturday
-                // If today is Saturday (6), daysSinceSaturday = 0
-                // If today is Sunday (0), daysSinceSaturday = 1
-                // If today is Monday (1), daysSinceSaturday = 2, etc.
-                const daysSinceSaturday = currentDay === 6 ? 0 : (currentDay + 1);
+                // Use March 16, 2026 as the base week
+                const monday = new Date(defaultStart);
+                monday.setDate(defaultStart.getDate() + (this.currentWeekOffset * 7));
 
-                const saturday = new Date(today);
-                saturday.setDate(today.getDate() - daysSinceSaturday + (this.currentWeekOffset * 7));
-
-                // Update week display (Saturday to Friday)
-                const weekEnd = new Date(saturday);
-                weekEnd.setDate(saturday.getDate() + 6);
+                // Update week display (Monday to Sunday)
+                const weekEnd = new Date(monday);
+                weekEnd.setDate(monday.getDate() + 6);
                 document.getElementById('weekDisplay').textContent =
-                    `${saturday.getDate()}/${saturday.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}/${weekEnd.getFullYear()}`;
+                    `${monday.getDate()}/${monday.getMonth() + 1} - ${weekEnd.getDate()}/${weekEnd.getMonth() + 1}/${weekEnd.getFullYear()}`;
 
-                // Create 7 days (Saturday to Friday)
+                // Create 7 days (Monday to Sunday)
                 for (let i = 0; i < 7; i++) {
-                    const dayDate = new Date(saturday);
-                    dayDate.setDate(saturday.getDate() + i);
+                    const dayDate = new Date(monday);
+                    dayDate.setDate(monday.getDate() + i);
 
                     const dayCard = document.createElement('div');
                     dayCard.className = 'day-card';

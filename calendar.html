@@ -1630,7 +1630,7 @@
             ],
             currentTaskId: null,
             currentView: 'calendar',
-            currentDate: new Date(),
+            currentDate: new Date(2026, 2, 16), // March 16, 2026
             calendarViewType: 'month', // 'week' or 'month'
 
             init() {
@@ -3126,19 +3126,17 @@
             renderWeekCalendar() {
                 const currentDate = new Date(this.currentDate);
 
-                // Obtener el inicio de la semana (SÁBADO)
+                // Obtener el inicio de la semana (LUNES)
                 const startOfWeek = new Date(currentDate);
-                // Ajustar para que la semana comience en sábado
+                // Ajustar para que la semana comience en lunes
                 // getDay() retorna: 0=Dom, 1=Lun, 2=Mar, 3=Mié, 4=Jue, 5=Vie, 6=Sáb
                 let dayOfWeek = currentDate.getDay();
-                // Si es sábado (6), no restar nada. Si es domingo (0), restar 1, etc.
+                // Calcular días a restar para llegar al lunes
                 let daysToSubtract;
-                if (dayOfWeek === 6) {
-                    daysToSubtract = 0; // Ya es sábado
-                } else if (dayOfWeek === 0) {
-                    daysToSubtract = 1; // Domingo, retroceder 1 día al sábado
+                if (dayOfWeek === 0) {
+                    daysToSubtract = 6; // Domingo, retroceder 6 días al lunes
                 } else {
-                    daysToSubtract = dayOfWeek + 1; // Lun=2, Mar=3, Mié=4, Jue=5, Vie=6
+                    daysToSubtract = dayOfWeek - 1; // Lun=0, Mar=1, Mié=2, Jue=3, Vie=4, Sáb=5
                 }
                 startOfWeek.setDate(currentDate.getDate() - daysToSubtract);
 
@@ -3190,7 +3188,7 @@
                     // Número del día con día de la semana
                     const dayNumber = document.createElement('div');
                     dayNumber.className = 'calendar-day-number';
-                    const weekDays = ['Sáb', 'Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie']; // Comienza en Sábado
+                    const weekDays = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']; // Comienza en Lunes
                     dayNumber.innerHTML = `
                         <div style="font-size: 12px; color: #718096; font-weight: 600;">${weekDays[i]}</div>
                         <div style="font-size: 24px;">${currentDay.getDate()}</div>
@@ -3393,7 +3391,7 @@
             },
 
             today() {
-                this.currentDate = new Date();
+                this.currentDate = new Date(2026, 2, 16); // March 16, 2026
                 this.renderCalendar();
             }
         };
